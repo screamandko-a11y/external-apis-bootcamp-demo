@@ -47,13 +47,20 @@ public class BookWebClientImpl implements BookWebClient {
     public Flux<BookDto> getAllBooksAsync() {
         return webClient.get()
                 .uri("/books")
-                .retrieve()
-                .bodyToMono(BookApiResponse[].class)
+                .exchangeToFlux(response -> {
+                    if (response.statusCode().isError()) {
+                        return response.createException()
+                                .flatMapMany(Flux::<BookApiResponse>error);
+                    }
+
+                    return response.mutate()
+                            .body(body -> body.switchIfEmpty(
+                                    Flux.error(new ClientException(
+                                            "External service returned an empty body for books"))))
+                            .build()
+                            .bodyToFlux(BookApiResponse.class);
+                })
                 .timeout(Duration.ofSeconds(5))
-                .switchIfEmpty(Mono.error(
-                        new ClientException(
-                                "External service returned an empty body for books")))
-                .flatMapMany(Flux::fromArray)
                 .map(response -> new BookDto(
                         response.title(),
                         response.author(),

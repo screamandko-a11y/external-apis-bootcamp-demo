@@ -1,4 +1,4 @@
-откудspring:
+spring:
   application:
     name: external-apis-bootcamp-demo
 

@@ -8,6 +8,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.List;
 
 
@@ -25,7 +26,9 @@ public class BookWebClientImpl implements BookWebClient {
         Mono<BookApiResponse> responseMono = webClient.get()
                 .uri("/books/{id}", id)
                 .retrieve()
-                .bodyToMono(BookApiResponse.class).switchIfEmpty(Mono.error(
+                .bodyToMono(BookApiResponse.class)
+                .timeout(Duration.ofSeconds(5))
+                .switchIfEmpty(Mono.error(
                         new ClientException(
                                 "External service returned an empty body for book with id=" + id)))
                 .onErrorMap(
@@ -46,6 +49,7 @@ public class BookWebClientImpl implements BookWebClient {
                 .uri("/books")
                 .retrieve()
                 .bodyToFlux(BookApiResponse.class)
+                .timeout(Duration.ofSeconds(5))
                 .map(response -> new BookDto(
                         response.title(),
                         response.author(),

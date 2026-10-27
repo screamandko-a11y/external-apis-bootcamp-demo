@@ -4,15 +4,12 @@ import com.accenture.externalapis.demo.config.ExternalServiceProperties;
 import com.accenture.externalapis.demo.dto.BookApiResponse;
 import com.accenture.externalapis.demo.dto.BookDto;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.client.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
-// Make this class implement BookRestClient.
+
 @Component
 public class BookRestClientImpl implements BookRestClient {
 
@@ -45,6 +42,10 @@ public class BookRestClientImpl implements BookRestClient {
         } catch (ResourceAccessException e) {
             throw new ClientException(
                     "Failed to connect to external service for book with id=" + id, e);
+        } catch (RestClientException e) {
+            throw new ClientException(
+                    "Failed to read external response for book with id=" + id, e);
+
         }
     }
 
@@ -71,12 +72,17 @@ public class BookRestClientImpl implements BookRestClient {
             return books;
         } catch (HttpClientErrorException e) {
             throw new ClientException("Failed to fetch books", e);
+
         } catch (HttpServerErrorException e) {
             throw new ClientException(
                     "External service failed while fetching books", e);
+
         } catch (ResourceAccessException e) {
             throw new ClientException(
                     "Failed to connect to external service while fetching books", e);
+        } catch (RestClientException e) {
+            throw new ClientException(
+                    "Failed to read external response while fetching books", e);
         }
     }
 

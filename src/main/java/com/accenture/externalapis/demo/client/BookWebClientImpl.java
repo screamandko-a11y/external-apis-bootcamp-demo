@@ -48,8 +48,12 @@ public class BookWebClientImpl implements BookWebClient {
         return webClient.get()
                 .uri("/books")
                 .retrieve()
-                .bodyToFlux(BookApiResponse.class)
+                .bodyToMono(BookApiResponse[].class)
                 .timeout(Duration.ofSeconds(5))
+                .switchIfEmpty(Mono.error(
+                        new ClientException(
+                                "External service returned an empty body for books")))
+                .flatMapMany(Flux::fromArray)
                 .map(response -> new BookDto(
                         response.title(),
                         response.author(),

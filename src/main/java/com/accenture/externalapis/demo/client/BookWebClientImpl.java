@@ -25,7 +25,14 @@ public class BookWebClientImpl implements BookWebClient {
         Mono<BookApiResponse> responseMono = webClient.get()
                 .uri("/books/{id}", id)
                 .retrieve()
-                .bodyToMono(BookApiResponse.class);
+                .bodyToMono(BookApiResponse.class).switchIfEmpty(Mono.error(
+                        new ClientException(
+                                "External service returned an empty body for book with id=" + id)))
+                .onErrorMap(
+                error -> !(error instanceof ClientException),
+                error -> new ClientException(
+                        "Failed to fetch book with id=" + id, error));
+
         return responseMono.map(response -> new BookDto(
                 response.title(),
                 response.author(),
@@ -35,7 +42,19 @@ public class BookWebClientImpl implements BookWebClient {
 
     @Override
     public Flux<BookDto> getAllBooksAsync() {
-        throw new UnsupportedOperationException("WebClient is not implemented yet");
+        return webClient.get()
+                .uri("/books")
+                .retrieve()
+                .bodyToFlux(BookApiResponse.class)
+                .map(response -> new BookDto(
+                        response.title(),
+                        response.author(),
+                        response.genre(),
+                        response.price()))
+                .onErrorMap(
+                        error -> !(error instanceof ClientException),
+                        error -> new ClientException(
+                                "Failed to fetch books", error));
     }
 
     @Override

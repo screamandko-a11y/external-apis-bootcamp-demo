@@ -9,6 +9,7 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
+import java.util.ArrayList;
 import java.util.List;
 
 // Make this class implement BookRestClient.
@@ -41,7 +42,7 @@ public class BookRestClientImpl implements BookRestClient {
             throw new ClientException("Failed to fetch book with id= " + id, e);
         } catch (HttpServerErrorException e) {
             throw new ClientException("External service failed for book with id=" + id, e);
-        }catch (ResourceAccessException e) {
+        } catch (ResourceAccessException e) {
             throw new ClientException(
                     "Failed to connect to external service for book with id=" + id, e);
         }
@@ -49,31 +50,40 @@ public class BookRestClientImpl implements BookRestClient {
 
     @Override
     public List<BookDto> getAllBooks() {
-        return List.of();
-    }
+        try {
+            BookApiResponse[] responses = restClient.get()
+                    .uri("/books")
+                    .retrieve()
+                    .body(BookApiResponse[].class);
+            if (responses == null) {
+                throw new ClientException("External service returned an empty body for books");
 
+            }
+            List<BookDto> books = new ArrayList<>();
+
+            for (BookApiResponse response : responses) {
+                books.add(new BookDto(
+                        response.title(),
+                        response.author(),
+                        response.genre(),
+                        response.price()));
+            }
+            return books;
+        } catch (HttpClientErrorException e) {
+            throw new ClientException("Failed to fetch books", e);
+        } catch (HttpServerErrorException e) {
+            throw new ClientException(
+                    "External service failed while fetching books", e);
+        } catch (ResourceAccessException e) {
+            throw new ClientException(
+                    "Failed to connect to external service while fetching books", e);
+        }
+    }
 
 
 
     public BookRestClientImpl(RestClient.Builder builder, ExternalServiceProperties properties) {
         this.restClient = builder.baseUrl(properties.baseUrl()).build();
-        // Build the RestClient using builder.baseUrl(properties.baseUrl()).build()
-        // and assign it to this.restClient
-        //
-        // Optional/bonus: this service doesn't require auth, but in a real API you would
-        // often also add builder.defaultHeader("Authorization", "Bearer " + token) here.
     }
 
-
-    // TODO: Implement getBook(Long id) - fetch one book from GET /books/{id} as a
-    // BookApiResponse, then map it onto a BookDto (only keep the fields BookDto needs).
-    //
-    // TODO: Handle the main RestClient error cases and rethrow them as ClientException:
-    //  - HttpClientErrorException (4xx, e.g. book not found)
-    //  - HttpServerErrorException (5xx, e.g. the faulty/teapot book)
-    //  - ResourceAccessException (connection refused / timeout - the external service is unreachable)
-
-    // TODO: Implement getAllBooks() - fetch all books from GET /books as
-    // BookApiResponse[], then map each one onto a BookDto. Handle the same error
-    // cases as getBook() above.
 }

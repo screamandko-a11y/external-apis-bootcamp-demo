@@ -4,6 +4,9 @@ import com.accenture.externalapis.demo.config.ExternalServiceProperties;
 import com.accenture.externalapis.demo.dto.BookApiResponse;
 import com.accenture.externalapis.demo.dto.BookDto;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
@@ -17,17 +20,31 @@ public class BookRestClientImpl implements BookRestClient {
 
     @Override
     public BookDto getBook(Long id) {
-        BookApiResponse response = restClient.get()
-                .uri("/books/{id}", id)
-                .retrieve()
-                .body(BookApiResponse.class);
 
-        return new BookDto(
-                response.title(),
-                response.author(),
-                response.genre(),
-                response.price());
+        try {
+            BookApiResponse response = restClient.get()
+                    .uri("/books/{id}", id)
+                    .retrieve()
+                    .body(BookApiResponse.class);
+            if (response == null) {
+                throw new ClientException(
+                        "External service returned an empty body for book with id=" + id);
+            }
 
+            return new BookDto(
+                    response.title(),
+                    response.author(),
+                    response.genre(),
+                    response.price());
+
+        } catch (HttpClientErrorException e) {
+            throw new ClientException("Failed to fetch book with id= " + id, e);
+        } catch (HttpServerErrorException e) {
+            throw new ClientException("External service failed for book with id=" + id, e);
+        }catch (ResourceAccessException e) {
+            throw new ClientException(
+                    "Failed to connect to external service for book with id=" + id, e);
+        }
     }
 
     @Override

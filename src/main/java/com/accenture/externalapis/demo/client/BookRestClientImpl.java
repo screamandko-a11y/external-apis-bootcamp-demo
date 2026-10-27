@@ -8,14 +8,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.*;
 
 import java.time.Duration;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 
 @Component
 public class BookRestClientImpl implements BookRestClient {
 
-    private RestClient restClient;
+    private final RestClient restClient;
 
     public BookRestClientImpl(RestClient.Builder builder, ExternalServiceProperties properties) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
@@ -73,16 +73,13 @@ public class BookRestClientImpl implements BookRestClient {
                 throw new ClientException("External service returned an empty body for books");
 
             }
-            List<BookDto> books = new ArrayList<>();
-
-            for (BookApiResponse response : responses) {
-                books.add(new BookDto(
-                        response.title(),
-                        response.author(),
-                        response.genre(),
-                        response.price()));
-            }
-            return books;
+            return Arrays.stream(responses)
+                    .map(response -> new BookDto(
+                            response.title(),
+                            response.author(),
+                            response.genre(),
+                            response.price()))
+                    .toList();
         } catch (HttpClientErrorException e) {
             throw new ClientException("Failed to fetch books", e);
 

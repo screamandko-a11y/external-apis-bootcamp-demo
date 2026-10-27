@@ -63,11 +63,18 @@ public class BookRestClientImpl implements BookRestClient {
 
             }
             return Arrays.stream(responses)
-                    .map(response -> new BookDto(
-                            response.title(),
-                            response.author(),
-                            response.genre(),
-                            response.price()))
+                    .map(response -> {
+                        if (response == null) {
+                            throw new ClientException(
+                                    "External service returned a null book in the list");
+                        }
+
+                        return new BookDto(
+                                response.title(),
+                                response.author(),
+                                response.genre(),
+                                response.price());
+                    })
                     .toList();
         } catch (HttpClientErrorException e) {
             throw new ClientException("Failed to fetch books", e);

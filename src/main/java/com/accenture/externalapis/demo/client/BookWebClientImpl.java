@@ -15,7 +15,7 @@ import java.util.List;
 @Component
 public class BookWebClientImpl implements BookWebClient {
 
-    private WebClient webClient;
+    private final WebClient webClient;
 
     public BookWebClientImpl(WebClient.Builder builder, ExternalServiceProperties properties) {
         this.webClient = builder.baseUrl(properties.baseUrl()).build();

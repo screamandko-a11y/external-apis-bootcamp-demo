@@ -1,6 +1,7 @@
 package com.accenture.externalapis.demo.client;
 
 import com.accenture.externalapis.demo.config.ExternalServiceProperties;
+import com.accenture.externalapis.demo.dto.BookApiResponse;
 import com.accenture.externalapis.demo.dto.BookDto;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -16,16 +17,20 @@ public class BookWebClientImpl implements BookWebClient {
     private WebClient webClient;
 
     public BookWebClientImpl(WebClient.Builder builder, ExternalServiceProperties properties) {
-        // TODO: Build the WebClient using builder.baseUrl(properties.baseUrl()).build()
-        // and assign it to this.webClient
-        //
-        // Optional/bonus: this service doesn't require auth, but in a real API you would
-        // often also add builder.defaultHeader("Authorization", "Bearer " + token) here.
+        this.webClient = builder.baseUrl(properties.baseUrl()).build();
     }
 
     @Override
     public Mono<BookDto> getBookAsync(Long id) {
-        throw new UnsupportedOperationException("WebClient is not implemented yet");
+        Mono<BookApiResponse> responseMono = webClient.get()
+                .uri("/books/{id}", id)
+                .retrieve()
+                .bodyToMono(BookApiResponse.class);
+        return responseMono.map(response -> new BookDto(
+                response.title(),
+                response.author(),
+                response.genre(),
+                response.price()));
     }
 
     @Override

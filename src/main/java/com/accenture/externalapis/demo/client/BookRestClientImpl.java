@@ -15,6 +15,10 @@ public class BookRestClientImpl implements BookRestClient {
 
     private RestClient restClient;
 
+    public BookRestClientImpl(RestClient.Builder builder, ExternalServiceProperties properties) {
+        this.restClient = builder.baseUrl(properties.baseUrl()).build();
+    }
+
 
     @Override
     public BookDto getBook(Long id) {
@@ -84,12 +88,6 @@ public class BookRestClientImpl implements BookRestClient {
             throw new ClientException(
                     "Failed to read external response while fetching books", e);
         }
-    }
-
-
-
-    public BookRestClientImpl(RestClient.Builder builder, ExternalServiceProperties properties) {
-        this.restClient = builder.baseUrl(properties.baseUrl()).build();
     }
 
 }
